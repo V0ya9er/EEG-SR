@@ -1,0 +1,11 @@
+name: conformer   # 用于文件夹命名
+
+_target_: src.models.components.conformer.EEGConformer
+n_classes: 4
+channels: 22
+samples: 1000
+emb_size: 40
+depth: 6
+heads: 8
+kernel_size: 25
+dropout: 0.5

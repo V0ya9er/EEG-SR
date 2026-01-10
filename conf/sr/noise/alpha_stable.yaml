@@ -1,0 +1,5 @@
+name: alpha    # 缩写，用于文件夹命名
+
+_target_: src.modules.sr_layer.AlphaStableNoise
+alpha: 1.5
+beta: 0.0

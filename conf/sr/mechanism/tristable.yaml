@@ -1,0 +1,8 @@
+name: tri      # 缩写，用于文件夹命名
+
+_target_: src.modules.sr_layer.TristableSR
+intensity: 1.0
+a: 1.0
+b: 1.0
+c: 1.0
+dt: 0.01

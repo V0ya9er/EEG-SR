@@ -1,0 +1,34 @@
+# Analysis configuration for SR noise sweep
+
+# Noise intensity range
+d_min: 0.0
+d_max: 5.0
+d_step: 0.1
+
+# Output directory
+output_dir: ./results
+
+# Visualization settings
+visualization:
+  save_format: png  # png, pdf, or both
+  dpi: 300
+  figsize_metrics: [14, 4]
+  figsize_confusion: [8, 6]
+  figsize_summary: [16, 10]
+  colormap_confusion: Blues
+  colormap_attention: viridis
+
+# Feature extraction for t-SNE
+tsne:
+  enabled: true
+  max_samples: 500
+  perplexity: 30
+
+# Key noise intensities for confusion matrix
+key_intensities:
+  - 0.0
+  - 1.0
+  - 2.0
+  - 3.0
+  - 4.0
+  - 5.0

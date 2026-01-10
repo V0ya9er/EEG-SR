@@ -1,0 +1,4 @@
+name: poisson  # 用于文件夹命名
+
+_target_: src.modules.sr_layer.PoissonNoise
+lam: 1.0

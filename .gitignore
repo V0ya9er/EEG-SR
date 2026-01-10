@@ -1,0 +1,101 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+
+# 虚拟环境
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE 和编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# 项目特定 - 缓存
+cache/
+.cache/
+*.cache
+
+# 项目特定 - 菜单配置文件
+config.json
+
+# 项目特定 - 训练日志和检查点
+lightning_logs/
+outputs/
+*.ckpt
+experiment_state.json
+wandb/
+mlruns/
+tensorboard_logs/
+
+# 项目特定 - 结果和数据
+results/
+*.npy
+*.npz
+*.pkl
+*.pickle
+
+# MNE 数据缓存
+mne_data/
+~/mne_data/
+data/
+
+# 测试覆盖
+.coverage
+htmlcov/
+
+# 日志文件
+*.log
+logs/
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Hydra outputs
+multirun/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak

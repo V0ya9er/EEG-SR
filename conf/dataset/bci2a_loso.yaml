@@ -1,0 +1,20 @@
+# BCI Competition IV 2a - LOSO 配置
+name: bci2a    # 用于文件夹命名
+
+_target_: src.data.loso_datamodule.LOSODataModule
+dataset_name: "BNCI2014_001"
+all_subject_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+n_folds: 9                    # 默认 9 折 (真正的 LOSO: 每个被试一折)
+fold_id: 1                    # 当前折，可通过命令行覆盖
+n_classes: 4
+tmin: 0.0
+tmax: 4.0
+fmin: 4.0
+fmax: 38.0
+batch_size: 128               # LOSO 数据量大，使用更大 batch
+num_workers: 8
+pin_memory: true
+persistent_workers: true
+seed: ${seed}
+data_dir: "./data"
+show_fold_info: true

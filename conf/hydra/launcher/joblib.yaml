@@ -1,0 +1,14 @@
+# Hydra Joblib Launcher 配置
+# 使用方式: python src/loso_train.py --multirun hydra/launcher=joblib
+
+defaults:
+  - override /hydra/launcher: joblib
+
+hydra:
+  launcher:
+    _target_: hydra_plugins.hydra_joblib_launcher.joblib_launcher.JoblibLauncher
+    n_jobs: 4                    # 并行进程数（通常等于 GPU 数量）
+    backend: loky               # 进程后端
+    timeout: null               # 超时时间
+    prefer: processes           # 优先使用进程而非线程
+    verbose: 10                 # 日志详细程度

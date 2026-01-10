@@ -1,0 +1,7 @@
+name: bi       # 缩写，用于文件夹命名
+
+_target_: src.modules.sr_layer.BistableSR
+intensity: 1.0
+a: 1.0
+b: 1.0
+dt: 0.01

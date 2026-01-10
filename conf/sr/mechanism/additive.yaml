@@ -1,0 +1,4 @@
+name: add      # 缩写，用于文件夹命名
+
+_target_: src.modules.sr_layer.AdditiveSR
+intensity: 1.0

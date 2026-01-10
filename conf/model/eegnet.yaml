@@ -1,0 +1,13 @@
+name: eegnet   # 用于文件夹命名
+
+_target_: src.models.components.eegnet.EEGNet
+nb_classes: 4
+Chans: 22
+Samples: 1000
+dropoutRate: 0.5
+kernLength: 64
+F1: 8
+D: 2
+F2: 16
+norm_rate: 0.25
+dropoutType: 'Dropout'

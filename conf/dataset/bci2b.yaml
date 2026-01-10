@@ -1,0 +1,17 @@
+name: bci2b    # 用于文件夹命名
+fold_id: 0     # 兼容性字段，非 LOSO 训练时使用
+
+_target_: src.data.datamodule.EEGDataModule
+dataset_name: "BNCI2014_004"
+subject_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9]  # 使用全部 9 个被试者
+n_classes: 2
+tmin: 0.0
+tmax: 4.0
+fmin: 4.0
+fmax: 38.0
+batch_size: 64
+num_workers: 4  # 启用多进程数据加载，提高 GPU 利用率
+pin_memory: true  # 加速 CPU 到 GPU 数据传输
+persistent_workers: true  # 保持 worker 进程，减少启动开销
+seed: ${seed}
+data_dir: "./data"
