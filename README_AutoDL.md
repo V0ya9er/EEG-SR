@@ -30,12 +30,13 @@
 ### 2. 上传代码
 
 ```bash
-# 方式 1：Git 克隆 (推荐)
+# 方式 1：Git 克隆 (代码更新方便，但需要下载数据)
 cd /root/autodl-tmp
 git clone <your-repo-url> SRTest
 cd SRTest
 
-# 方式 2：通过 AutoDL 网页文件管理上传 zip 包
+# 方式 2：上传压缩包 (推荐，包含离线数据)
+# 详见下方"离线数据打包"章节
 ```
 
 ### 3. 初始化环境
@@ -46,10 +47,16 @@ chmod +x scripts/autodl_setup.sh
 ```
 
 初始化脚本会：
+- ✅ 配置国内镜像源（清华 TUNA）
 - ✅ 检查 GPU 配置
 - ✅ 安装 Python 依赖
-- ✅ 预下载 EEG 数据集到 SSD
+- ✅ 检测并使用离线数据（如有）
 - ✅ 验证安装
+
+**如果已包含离线数据：**
+```bash
+./scripts/autodl_setup.sh --skip-download
+```
 
 ---
 
@@ -271,3 +278,77 @@ python scripts/run_sweep.py \
 | 9折 × 20强度 × 2模型 × 3机制 × 5噪声 | 5,400 | ~81 小时 | ~¥616 |
 
 **推荐：** 先用小配置验证，再跑完整实验。
+
+---
+
+## 📦 离线数据打包
+
+为避免在服务器上下载数据（BNCI 服务器较慢），可以在本地准备好数据后一起打包上传。
+
+### 1. 本地准备数据
+
+```bash
+# 检查现有数据完整性
+python scripts/download_data.py --check
+
+# 如有缺失，下载补全
+python scripts/download_data.py --download
+
+# 复制数据到项目目录
+python scripts/download_data.py --copy-to-project
+
+# 或者一步完成
+python scripts/download_data.py --all
+```
+
+### 2. 打包项目
+
+**Windows (PowerShell):**
+```powershell
+# 使用 7-Zip (推荐)
+7z a -xr!lightning_logs -xr!outputs -xr!__pycache__ -xr!.git -xr!*.ckpt `
+    eeg-sr-with-data.7z .
+
+# 或使用 tar (需要 Git Bash 或 WSL)
+tar --exclude='lightning_logs' --exclude='outputs' --exclude='__pycache__' \
+    --exclude='.git' --exclude='*.ckpt' -czvf eeg-sr-with-data.tar.gz .
+```
+
+**Linux/Mac:**
+```bash
+tar --exclude='lightning_logs' --exclude='outputs' --exclude='__pycache__' \
+    --exclude='.git' --exclude='*.ckpt' -czvf eeg-sr-with-data.tar.gz .
+```
+
+预期大小：约 **150-200 MB**（含 BCI IV 2a + 2b 数据）
+
+### 3. 上传到 AutoDL
+
+1. 登录 AutoDL 控制台
+2. 进入实例 → 文件管理
+3. 上传 `eeg-sr-with-data.7z` 到 `/root/autodl-tmp/`
+4. 解压并运行：
+
+```bash
+cd /root/autodl-tmp
+7z x eeg-sr-with-data.7z -o./SRTest
+# 或
+tar -xzvf eeg-sr-with-data.tar.gz -C ./SRTest
+
+cd SRTest
+chmod +x scripts/autodl_setup.sh
+./scripts/autodl_setup.sh --skip-download
+```
+
+安装脚本会自动检测 `data/MNE-bnci-data` 目录并使用离线数据。
+
+### 4. 验证数据
+
+```bash
+python -c "
+from src.data.loso_datamodule import LOSODataModule
+dm = LOSODataModule(dataset_name='BNCI2014_001', n_folds=3, fold_id=1)
+dm.setup()
+print('✅ 数据加载成功')
+"
+```

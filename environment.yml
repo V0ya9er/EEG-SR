@@ -1,14 +1,24 @@
+# EEG-SR 项目环境配置
+# 使用 conda 安装基础包，pip 安装 EEG 专用包
+# 创建环境: conda env create -f environment.yml
+# 激活环境: conda activate eeg-sr
+
+name: eeg-sr
+
 channels:
   - pytorch
   - nvidia
   - conda-forge
   - defaults
+
 dependencies:
   - python=3.10
   - pytorch>=2.0.0
   - torchvision>=0.15.0
   - torchaudio>=2.0.0
-  - pytorch-cuda=12.8
+  # CUDA 版本根据实际环境调整
+  # AutoDL 常见版本: 11.8, 12.1
+  - pytorch-cuda>=11.8
   - pytorch-lightning>=2.0.0
   - numpy
   - pandas
@@ -20,6 +30,7 @@ dependencies:
   - pip
   - pip:
     - hydra-core>=1.3.0
+    - hydra-joblib-launcher>=1.2.0  # 多任务并行 launcher
     - braindecode>=0.8.0
     - mne>=1.3.0
     - moabb>=1.0.0

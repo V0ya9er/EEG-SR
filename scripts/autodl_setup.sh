@@ -1,20 +1,35 @@
 #!/bin/bash
 # ============================================
-# AutoDL 环境初始化脚本
+# AutoDL 环境初始化脚本 (优化版)
 # ============================================
-# 
+#
 # 使用方式:
 #   chmod +x scripts/autodl_setup.sh
-#   ./scripts/autodl_setup.sh
+#   ./scripts/autodl_setup.sh [--skip-download]
+#
+# 选项:
+#   --skip-download  跳过数据下载（使用本地数据时）
 #
 # 该脚本会:
-#   1. 检查 GPU 配置
-#   2. 安装 Python 依赖
-#   3. 预下载 EEG 数据集到 SSD
-#   4. 验证安装
+#   1. 配置国内镜像源
+#   2. 检查 GPU 配置
+#   3. 安装 Python 依赖
+#   4. 配置离线数据或下载数据
+#   5. 验证安装
 #
 
 set -e  # 遇到错误立即退出
+
+# 解析参数
+SKIP_DOWNLOAD=false
+for arg in "$@"; do
+    case $arg in
+        --skip-download)
+            SKIP_DOWNLOAD=true
+            shift
+            ;;
+    esac
+done
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
@@ -24,10 +39,75 @@ echo "╚═══════════════════════�
 echo ""
 
 # ============================================
-# 1. 检查 GPU
+# 1. 配置国内镜像源
 # ============================================
 echo "┌──────────────────────────────────────────────────────────────┐"
-echo "│ [1/5] 检查 GPU 配置                                         │"
+echo "│ [1/6] 配置国内镜像源                                        │"
+echo "└──────────────────────────────────────────────────────────────┘"
+
+# pip 清华镜像
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple 2>/dev/null || true
+pip config set global.trusted-host pypi.tuna.tsinghua.edu.cn 2>/dev/null || true
+
+# conda 清华镜像 (如果使用 conda)
+if command -v conda &> /dev/null; then
+    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/ 2>/dev/null || true
+    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/ 2>/dev/null || true
+    conda config --set show_channel_urls yes 2>/dev/null || true
+fi
+
+echo "✓ 镜像源配置完成 (清华 TUNA)"
+
+# ============================================
+# 2. 安装系统工具
+# ============================================
+echo ""
+echo "┌──────────────────────────────────────────────────────────────┐"
+echo "│ [2/7] 安装系统工具 (7z, unrar)                              │"
+echo "└──────────────────────────────────────────────────────────────┘"
+
+# 检查是否需要安装
+NEED_INSTALL=false
+if ! command -v 7z &> /dev/null; then
+    echo "  7z 未安装"
+    NEED_INSTALL=true
+fi
+if ! command -v unrar &> /dev/null; then
+    echo "  unrar 未安装"
+    NEED_INSTALL=true
+fi
+
+if [ "$NEED_INSTALL" = true ]; then
+    echo "安装解压工具..."
+    apt-get update -qq
+    apt-get install -y -qq p7zip-full unrar 2>/dev/null || {
+        echo "  ⚠ apt 安装失败，尝试其他方式..."
+        # 尝试使用 conda 安装
+        if command -v conda &> /dev/null; then
+            conda install -y -c conda-forge p7zip unrar 2>/dev/null || true
+        fi
+    }
+fi
+
+# 验证安装
+if command -v 7z &> /dev/null; then
+    echo "✓ 7z 已安装: $(7z | head -2 | tail -1)"
+else
+    echo "⚠ 7z 安装失败，请手动安装: apt-get install p7zip-full"
+fi
+
+if command -v unrar &> /dev/null; then
+    echo "✓ unrar 已安装"
+else
+    echo "⚠ unrar 安装失败，请手动安装: apt-get install unrar"
+fi
+
+# ============================================
+# 3. 检查 GPU
+# ============================================
+echo ""
+echo "┌──────────────────────────────────────────────────────────────┐"
+echo "│ [3/7] 检查 GPU 配置                                         │"
 echo "└──────────────────────────────────────────────────────────────┘"
 nvidia-smi --query-gpu=index,name,memory.total --format=csv
 GPU_COUNT=$(nvidia-smi -L | wc -l)
@@ -35,24 +115,43 @@ echo ""
 echo "✓ 检测到 ${GPU_COUNT} 个 GPU"
 
 # ============================================
-# 2. 创建数据目录（使用 SSD）
+# 4. 创建数据目录（使用 SSD）
 # ============================================
 echo ""
 echo "┌──────────────────────────────────────────────────────────────┐"
-echo "│ [2/5] 配置数据目录 (SSD)                                    │"
+echo "│ [4/7] 配置数据目录 (SSD)                                    │"
 echo "└──────────────────────────────────────────────────────────────┘"
+
+# 获取脚本所在目录和项目根目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_DATA="${PROJECT_ROOT}/data"
 
 # AutoDL SSD 路径
 SSD_PATH="/root/autodl-tmp"
-DATA_PATH="${SSD_PATH}/data"
 MNE_PATH="${SSD_PATH}/mne_data"
 
-mkdir -p "$DATA_PATH"
 mkdir -p "$MNE_PATH"
+
+# 检查项目是否包含离线数据
+if [ -d "${PROJECT_DATA}/MNE-bnci-data" ]; then
+    echo "✓ 检测到项目内离线数据: ${PROJECT_DATA}/MNE-bnci-data"
+    # 复制离线数据到 SSD 加速访问
+    if [ ! -d "${MNE_PATH}/MNE-bnci-data" ]; then
+        echo "  复制数据到 SSD..."
+        cp -r "${PROJECT_DATA}/MNE-bnci-data" "${MNE_PATH}/"
+        echo "  ✓ 数据已复制到 SSD"
+    else
+        echo "  ✓ SSD 中已存在数据"
+    fi
+    SKIP_DOWNLOAD=true
+fi
 
 # 设置 MNE 数据目录环境变量
 export MNE_DATA="$MNE_PATH"
-echo "export MNE_DATA=$MNE_PATH" >> ~/.bashrc
+if ! grep -q "export MNE_DATA=" ~/.bashrc; then
+    echo "export MNE_DATA=$MNE_PATH" >> ~/.bashrc
+fi
 
 # 创建符号链接（如果需要）
 if [ -d "$HOME/mne_data" ] && [ ! -L "$HOME/mne_data" ]; then
@@ -60,38 +159,42 @@ if [ -d "$HOME/mne_data" ] && [ ! -L "$HOME/mne_data" ]; then
     mv ~/mne_data/* "$MNE_PATH/" 2>/dev/null || true
     rm -rf ~/mne_data
 fi
-ln -sf "$MNE_PATH" ~/mne_data
+ln -sf "$MNE_PATH" ~/mne_data 2>/dev/null || true
 
-echo "✓ 数据目录: $DATA_PATH"
 echo "✓ MNE 数据目录: $MNE_PATH"
 
 # ============================================
-# 3. 安装依赖
+# 5. 安装依赖
 # ============================================
 echo ""
 echo "┌──────────────────────────────────────────────────────────────┐"
-echo "│ [3/5] 安装 Python 依赖                                      │"
+echo "│ [5/7] 安装 Python 依赖                                      │"
 echo "└──────────────────────────────────────────────────────────────┘"
 
 # 升级 pip
 pip install --upgrade pip -q
 
-# 安装项目依赖
-pip install -r requirements.txt -q
+# 安装项目依赖 (使用清华镜像)
+echo "安装依赖中..."
+pip install -r "${PROJECT_ROOT}/requirements.txt" -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
 
 echo "✓ Python 依赖安装完成"
 
 # ============================================
-# 4. 预下载数据集
+# 6. 数据集准备
 # ============================================
 echo ""
 echo "┌──────────────────────────────────────────────────────────────┐"
-echo "│ [4/5] 预下载 EEG 数据集                                     │"
+echo "│ [6/7] EEG 数据集准备                                        │"
 echo "└──────────────────────────────────────────────────────────────┘"
-echo "这可能需要 5-10 分钟..."
-echo ""
 
-python -c "
+if [ "$SKIP_DOWNLOAD" = true ]; then
+    echo "✓ 使用离线数据，跳过下载"
+else
+    echo "下载 EEG 数据集 (这可能需要 5-10 分钟)..."
+    echo ""
+
+    python -c "
 import os
 os.environ['MNE_DATA'] = '$MNE_PATH'
 
@@ -112,16 +215,17 @@ try:
 except Exception as e:
     print(f'   ⚠ 下载失败: {e}')
 "
+fi
 
 echo ""
 echo "✓ 数据集准备完成"
 
 # ============================================
-# 5. 验证安装
+# 7. 验证安装
 # ============================================
 echo ""
 echo "┌──────────────────────────────────────────────────────────────┐"
-echo "│ [5/5] 验证安装                                              │"
+echo "│ [7/7] 验证安装                                              │"
 echo "└──────────────────────────────────────────────────────────────┘"
 
 python -c "

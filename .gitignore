@@ -66,10 +66,16 @@ results/
 *.pkl
 *.pickle
 
-# MNE 数据缓存
+# MNE 数据缓存 (系统默认位置)
 mne_data/
 ~/mne_data/
+
+# 项目数据目录 - 用于离线打包
+# 注意：data/MNE-bnci-data 会包含在压缩包中，但不提交到 Git
+# 如需上传数据到 Git LFS，请移除以下规则
 data/
+!data/.gitkeep
+!data/README.md
 
 # 测试覆盖
 .coverage
